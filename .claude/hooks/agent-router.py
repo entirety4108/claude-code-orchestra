@@ -4,10 +4,34 @@ UserPromptSubmit hook: Route to appropriate agent based on user intent.
 
 Analyzes user prompts and suggests the most appropriate agent
 (Codex for design/debug, Gemini for research/multimodal).
+
+Multimodal file detection is highest priority — when PDF, video, audio,
+or image files are referenced, Gemini is ALWAYS suggested.
 """
 
 import json
+import re
 import sys
+
+# Multimodal file extensions that MUST be processed by Gemini
+MULTIMODAL_EXTENSIONS = [
+    # PDF
+    ".pdf",
+    # Video
+    ".mp4", ".mov", ".avi", ".mkv", ".webm",
+    # Audio
+    ".mp3", ".wav", ".m4a", ".flac", ".ogg",
+    # Image (for detailed analysis — screenshots can be read by Claude directly)
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",
+]
+
+# Pattern to detect file paths with multimodal extensions
+MULTIMODAL_PATTERN = re.compile(
+    r'[\w./\\~-]+\.(?:' +
+    '|'.join(ext.lstrip('.') for ext in MULTIMODAL_EXTENSIONS) +
+    r')(?:\s|$|["\']|,)',
+    re.IGNORECASE,
+)
 
 # Triggers for Codex (design, debugging, deep reasoning)
 CODEX_TRIGGERS = {
@@ -50,23 +74,39 @@ GEMINI_TRIGGERS = {
 }
 
 
-def detect_agent(prompt: str) -> tuple[str | None, str]:
-    """Detect which agent should handle this prompt."""
+def detect_multimodal_files(prompt: str) -> str | None:
+    """Detect multimodal file references in the prompt. Returns matched file path or None."""
+    match = MULTIMODAL_PATTERN.search(prompt)
+    if match:
+        return match.group(0).strip().rstrip('"\',')
+    return None
+
+
+def detect_agent(prompt: str) -> tuple[str | None, str, bool]:
+    """Detect which agent should handle this prompt.
+
+    Returns (agent, trigger, is_multimodal).
+    """
     prompt_lower = prompt.lower()
+
+    # HIGHEST PRIORITY: Multimodal file detection
+    multimodal_file = detect_multimodal_files(prompt)
+    if multimodal_file:
+        return "gemini-multimodal", multimodal_file, True
 
     # Check Codex triggers
     for triggers in CODEX_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
-                return "codex", trigger
+                return "codex", trigger, False
 
     # Check Gemini triggers
     for triggers in GEMINI_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
-                return "gemini", trigger
+                return "gemini", trigger, False
 
-    return None, ""
+    return None, "", False
 
 
 def main():
@@ -78,9 +118,24 @@ def main():
         if len(prompt) < 10:
             sys.exit(0)
 
-        agent, trigger = detect_agent(prompt)
+        agent, trigger, is_multimodal = detect_agent(prompt)
 
-        if agent == "codex":
+        if is_multimodal:
+            output = {
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": (
+                        f"[Multimodal File Detected] Found '{trigger}' in prompt. "
+                        "**MUST** use Gemini CLI to process this file. "
+                        "Pass the file to Gemini with specific extraction instructions: "
+                        f'`gemini -p "Extract: {{what to extract}}" < {trigger} 2>/dev/null` '
+                        "Do NOT attempt to read this file directly — use Gemini for content extraction."
+                    )
+                }
+            }
+            print(json.dumps(output))
+
+        elif agent == "codex":
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",

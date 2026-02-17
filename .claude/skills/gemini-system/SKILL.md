@@ -1,61 +1,81 @@
 ---
 name: gemini-system
 description: |
-  PROACTIVELY consult Gemini CLI for external web research and multimodal
-  data processing. Gemini excels at: Google Search grounding for latest
-  information, video/audio/PDF analysis, and library/API documentation lookup.
+  PROACTIVELY consult Gemini CLI for multimodal file processing and external
+  web research. MUST use Gemini when PDF, video, audio, or image files need
+  analysis — pass the file to Gemini with specific extraction instructions.
+  Also use for: Google Search grounding, latest docs, library research.
   NOTE: Codebase analysis is handled by Claude directly (1M context).
-  Explicit triggers: "research", "investigate", "analyze video/audio/PDF",
-  "latest docs", "library research".
+  Auto-triggers: file extensions .pdf, .mp4, .mov, .mp3, .wav, .m4a.
+  Explicit triggers: "research", "investigate", "analyze", "latest docs".
 metadata:
-  short-description: Claude Code ↔ Gemini CLI collaboration (external research & multimodal)
+  short-description: Claude Code ↔ Gemini CLI collaboration (multimodal & external research)
 ---
 
-# Gemini System — External Research & Multimodal Specialist
+# Gemini System — Multimodal File Processing & External Research
 
-**Gemini CLI is your specialist for external information and multimodal processing.**
+**Gemini CLI is your specialist for multimodal file processing and external information.**
 
 > **詳細ルール**: `.claude/rules/gemini-delegation.md`
 
-## Role (Opus 4.6)
+## Two Use Cases
 
-> **重要**: Claude 自身が 1M トークンのコンテキストを持つため、コードベース分析は Claude が直接行う。
-> Gemini の役割は「外部情報の取得」と「マルチモーダル処理」に特化した。
+### 1. マルチモーダルファイル処理（MUST — 自動委譲）
+
+**PDF、動画、音声、画像ファイルの内容理解が必要な場合、必ず Gemini にファイルを渡す。**
+
+```bash
+gemini -p "{抽出したい情報を具体的に指示}" < /path/to/file 2>/dev/null
+```
+
+| 対象 | 拡張子 |
+|------|--------|
+| PDF | `.pdf` |
+| 動画 | `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm` |
+| 音声 | `.mp3`, `.wav`, `.m4a`, `.flac`, `.ogg` |
+| 画像（高度分析） | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg` |
+
+> スクリーンショットの単純確認は Claude の Read ツールで直接可能。
+> 図表・ダイアグラムの詳細分析が必要な場合に Gemini を使う。
+
+### 2. 外部情報の取得（状況に応じて）
+
+```bash
+gemini -p "{research question}" 2>/dev/null
+```
+
+## Role (Opus 4.6)
 
 | Task | Agent |
 |------|-------|
 | **コードベース分析** | **Claude 直接** (1M context) |
+| **マルチモーダル (PDF/動画/音声/画像)** | **Gemini（必須）** |
 | **外部ライブラリ調査** | Gemini (Google Search) |
 | **最新ドキュメント検索** | Gemini (Google Search) |
-| **マルチモーダル (PDF/動画/音声)** | Gemini |
 | **設計判断** | Codex |
 | **デバッグ** | Codex |
 
-## Context Management
+## When to Consult
 
-| 状況 | 方法 |
-|------|------|
-| 短い質問・短い回答 | 直接呼び出しOK |
-| ライブラリ調査 | サブエージェント経由（出力が大きい場合） |
-| マルチモーダル処理 | サブエージェント経由 |
-| Agent Teams 内での調査 | Teammate が直接呼び出し |
+### MUST（自動委譲 — ユーザー指示不要）
 
-## When to Consult (MUST)
+- **マルチモーダルファイル処理** — PDF, 動画, 音声, 画像（高度分析）がタスクに関わる場合
+
+### SHOULD（状況に応じて）
 
 | Situation | Trigger Examples |
 |-----------|------------------|
 | **External research** | 「調べて」「リサーチ」 / "Research" "Investigate" |
 | **Library docs** | 「ライブラリ」「ドキュメント」 / "Library" "Docs" |
 | **Latest information** | 「最新の〜」「2026年の〜」 / "Latest" "Current" |
-| **Multimodal** | 「PDF」「動画」「音声」 / "PDF" "Video" "Audio" |
 
 ## When NOT to Consult
 
 - **コードベース分析** → Claude が 1M コンテキストで直接読む
+- **スクリーンショットの単純確認** → Claude の Read ツールで直接可能
 - Design decisions → Codex
 - Debugging → Codex
 - Code implementation → Claude
-- Simple file operations → Claude
 
 ## How to Consult
 
