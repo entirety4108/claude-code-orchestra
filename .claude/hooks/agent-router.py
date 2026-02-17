@@ -2,11 +2,10 @@
 """
 UserPromptSubmit hook: Route to appropriate agent based on user intent.
 
-Analyzes user prompts and suggests the most appropriate agent
-(Codex for design/debug, Gemini for research/multimodal).
-
-Multimodal file detection is highest priority — when PDF, video, audio,
-or image files are referenced, Gemini is ALWAYS suggested.
+Routing rules:
+- Multimodal files (PDF/video/audio/image) → Gemini CLI (HIGHEST PRIORITY)
+- Planning, design, complex code → Codex CLI
+- External research → Subagent with WebSearch/WebFetch
 """
 
 import json
@@ -33,41 +32,41 @@ MULTIMODAL_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Triggers for Codex (design, debugging, deep reasoning)
+# Triggers for Codex (planning, design, debugging, complex implementation)
 CODEX_TRIGGERS = {
     "ja": [
         "設計", "どう設計", "アーキテクチャ",
+        "計画", "計画を立てて",
         "なぜ動かない", "エラー", "バグ", "デバッグ",
         "どちらがいい", "比較して", "トレードオフ",
         "実装方法", "どう実装",
         "リファクタリング", "リファクタ",
-        "レビュー", "見て",
+        "レビュー",
         "考えて", "分析して", "深く",
+        "最適化",
     ],
     "en": [
         "design", "architecture", "architect",
+        "plan", "planning",
         "debug", "error", "bug", "not working", "fails",
         "compare", "trade-off", "tradeoff", "which is better",
-        "how to implement", "implementation",
+        "how to implement", "implementation", "complex",
         "refactor", "simplify",
         "review", "check this",
         "think", "analyze", "deeply",
+        "optimize", "performance",
     ],
 }
 
-# Triggers for Gemini (research, multimodal, large context)
-GEMINI_TRIGGERS = {
+# Triggers for external research (handled by subagent, NOT Gemini)
+RESEARCH_TRIGGERS = {
     "ja": [
         "調べて", "リサーチ", "調査",
-        "PDF", "動画", "音声", "画像",
-        "コードベース全体", "リポジトリ全体",
         "最新", "ドキュメント",
         "ライブラリ", "パッケージ",
     ],
     "en": [
         "research", "investigate", "look up", "find out",
-        "pdf", "video", "audio", "image",
-        "entire codebase", "whole repository",
         "latest", "documentation", "docs",
         "library", "package", "framework",
     ],
@@ -89,22 +88,22 @@ def detect_agent(prompt: str) -> tuple[str | None, str, bool]:
     """
     prompt_lower = prompt.lower()
 
-    # HIGHEST PRIORITY: Multimodal file detection
+    # HIGHEST PRIORITY: Multimodal file detection → Gemini
     multimodal_file = detect_multimodal_files(prompt)
     if multimodal_file:
         return "gemini-multimodal", multimodal_file, True
 
-    # Check Codex triggers
+    # Codex triggers (planning, design, debug, complex code)
     for triggers in CODEX_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
                 return "codex", trigger, False
 
-    # Check Gemini triggers
-    for triggers in GEMINI_TRIGGERS.values():
+    # Research triggers → subagent (NOT Gemini)
+    for triggers in RESEARCH_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
-                return "gemini", trigger, False
+                return "research-subagent", trigger, False
 
     return None, "", False
 
@@ -140,24 +139,26 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext": (
-                        f"[Agent Routing] Detected '{trigger}' - this task may benefit from "
-                        "Codex CLI's deep reasoning capabilities. Consider: "
+                        f"[Agent Routing] Detected '{trigger}' — this task may benefit from "
+                        "Codex CLI for planning, design, or complex implementation. Consider: "
                         "`codex exec --model gpt-5.3-codex --sandbox read-only --full-auto "
-                        '"{task description}"` for design decisions, debugging, or complex analysis.'
+                        '"{task description}"` for design decisions, planning, debugging, '
+                        "or complex analysis."
                     )
                 }
             }
             print(json.dumps(output))
 
-        elif agent == "gemini":
+        elif agent == "research-subagent":
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext": (
-                        f"[Agent Routing] Detected '{trigger}' - this task may benefit from "
-                        "Gemini CLI's research capabilities. Consider: "
-                        '`gemini -p "Research: {topic}" 2>/dev/null` '
-                        "for documentation, library research, or multimodal content."
+                        f"[Research Detected] Detected '{trigger}' — use a subagent "
+                        "(Task tool with subagent_type='general-purpose') with "
+                        "WebSearch/WebFetch for external research. "
+                        "Do NOT use Gemini for research — Gemini is multimodal file reading only. "
+                        "Save results to .claude/docs/research/."
                     )
                 }
             }

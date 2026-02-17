@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-PreToolUse hook: Suggest Gemini for research tasks.
+PreToolUse hook: Suggest using subagent for deep research tasks.
 
-Analyzes web search/fetch operations and suggests using Gemini CLI
-for comprehensive research with its larger context window.
+Analyzes web search/fetch operations and suggests delegating
+comprehensive research to a subagent to preserve main context.
+
+NOTE: Gemini is NOT used for research. External research is done
+via WebSearch/WebFetch in subagents.
 """
 
 import json
 import sys
 
-# Keywords that suggest deep research would benefit from Gemini
+# Keywords that suggest deep research would benefit from a subagent
 RESEARCH_INDICATORS = [
     "documentation",
     "best practice",
@@ -28,7 +31,7 @@ RESEARCH_INDICATORS = [
     "specification",
 ]
 
-# Simple lookups that don't need Gemini
+# Simple lookups that don't need a subagent
 SIMPLE_LOOKUP_PATTERNS = [
     "error message",
     "stack trace",
@@ -38,8 +41,8 @@ SIMPLE_LOOKUP_PATTERNS = [
 ]
 
 
-def should_suggest_gemini(query: str, url: str = "") -> tuple[bool, str]:
-    """Determine if Gemini should be suggested for this research."""
+def should_suggest_subagent(query: str, url: str = "") -> tuple[bool, str]:
+    """Determine if a subagent should be suggested for this research."""
     query_lower = query.lower()
     url_lower = url.lower()
     combined = f"{query_lower} {url_lower}"
@@ -76,18 +79,18 @@ def main():
             url = tool_input.get("url", "")
             query = tool_input.get("prompt", "")
 
-        should_suggest, reason = should_suggest_gemini(query, url)
+        should_suggest, reason = should_suggest_subagent(query, url)
 
         if should_suggest:
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "additionalContext": (
-                        f"[Gemini Research Suggestion] {reason}. "
-                        "For comprehensive research, consider using Gemini CLI (1M token context). "
-                        "**Recommended**: Use Task tool with subagent_type='general-purpose' "
-                        "to consult Gemini and save results to .claude/docs/research/. "
-                        "(Direct call OK for quick questions: `gemini -p '...' 2>/dev/null`)"
+                        f"[Research Suggestion] {reason}. "
+                        "For comprehensive research, consider using a subagent "
+                        "(Task tool with subagent_type='general-purpose') "
+                        "to gather and organize findings, saving results to "
+                        ".claude/docs/research/. This preserves main context."
                     )
                 }
             }

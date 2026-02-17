@@ -120,10 +120,10 @@ Create an agent team for project planning: {feature}
 
 Spawn two teammates:
 
-1. **Researcher** — Gemini CLI を使って外部調査を行う
+1. **Researcher** — WebSearch/WebFetch で外部調査を行う
    Prompt: "You are the Researcher for project: {feature}.
 
-   Your job: Use Gemini CLI to research external information needed for this project.
+   Your job: Research external information needed for this project.
 
    Project Brief:
    {project brief from Phase 1}
@@ -135,7 +135,9 @@ Spawn two teammates:
    4. Look for similar implementations and reference architectures
 
    How to research:
-   gemini -p "{question}" 2>/dev/null
+   - Use WebSearch tool for finding information
+   - Use WebFetch tool for reading specific documentation pages
+   - Do NOT use Gemini CLI (Gemini is only for multimodal file reading)
 
    Save all findings to .claude/docs/research/{feature}.md
    Save library docs to .claude/docs/libraries/{library}.md
@@ -145,10 +147,10 @@ Spawn two teammates:
    - Respond to Architect's research requests
    - Flag constraints that limit implementation options"
 
-2. **Architect** — Codex CLI を使って設計検討を行う
+2. **Architect** — Codex CLI を使って設計・計画を行う
    Prompt: "You are the Architect for project: {feature}.
 
-   Your job: Use Codex CLI to design the architecture and implementation plan.
+   Your job: Use Codex CLI to design the architecture and create implementation plan.
 
    Project Brief:
    {project brief from Phase 1}
@@ -156,7 +158,7 @@ Spawn two teammates:
    Tasks:
    1. Design architecture (modules, interfaces, data flow)
    2. Select patterns (considering existing codebase conventions)
-   3. Break down into implementable tasks with dependencies
+   3. Create step-by-step implementation plan with dependencies
    4. Identify risks and mitigation strategies
 
    How to consult Codex:
