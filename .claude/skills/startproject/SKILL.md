@@ -145,7 +145,29 @@ Spawn two teammates:
    Communicate with Architect teammate:
    - Share findings that affect design decisions
    - Respond to Architect's research requests
-   - Flag constraints that limit implementation options"
+   - Flag constraints that limit implementation options
+
+   IMPORTANT — Work Log:
+   When ALL your tasks are complete, write a work log file to:
+     .claude/logs/agent-teams/{team-name}/researcher.md
+
+   Use this format:
+   # Work Log: Researcher
+   ## Summary
+   (1-2 sentence summary of what you researched)
+   ## Tasks Completed
+   - [x] {task}: {brief description of findings}
+   ## Sources Consulted
+   - {URL or source}: {what was found}
+   ## Key Findings
+   - {finding}: {relevance to project}
+   ## Communication with Teammates
+   - → {recipient}: {summary of message sent}
+   - ← {sender}: {summary of message received}
+   ## Issues Encountered
+   - {issue}: {how it was resolved}
+   (If none, write 'None')
+   "
 
 2. **Architect** — Codex CLI を使って設計・計画を行う
    Prompt: "You are the Architect for project: {feature}.
@@ -169,7 +191,29 @@ Spawn two teammates:
    Communicate with Researcher teammate:
    - Request specific library/tool research
    - Share design constraints that need validation
-   - Adjust design based on Researcher's findings"
+   - Adjust design based on Researcher's findings
+
+   IMPORTANT — Work Log:
+   When ALL your tasks are complete, write a work log file to:
+     .claude/logs/agent-teams/{team-name}/architect.md
+
+   Use this format:
+   # Work Log: Architect
+   ## Summary
+   (1-2 sentence summary of what you designed)
+   ## Tasks Completed
+   - [x] {task}: {brief description of what was done}
+   ## Design Decisions
+   - {decision}: {rationale}
+   ## Codex Consultations
+   - {question asked to Codex}: {key insight from response}
+   ## Communication with Teammates
+   - → {recipient}: {summary of message sent}
+   - ← {sender}: {summary of message received}
+   ## Issues Encountered
+   - {issue}: {how it was resolved}
+   (If none, write 'None')
+   "
 
 Wait for both teammates to complete their tasks.
 ```
