@@ -8,12 +8,15 @@ Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI
 
 ## Agent Roles — 役割分担
 
-| Agent | Role | Use For |
-|-------|------|---------|
-| **Claude Code（メイン）** | 全体統括 | ユーザー対話、コードベース分析（1M context）、タスク管理 |
-| **Claude Code（サブエージェント）** | 調査・実装の実行部隊 | 外部情報取得（WebSearch/WebFetch）、調査整理、コード実装 |
-| **Codex CLI** | 計画・難しい実装 | アーキテクチャ設計、実装計画、複雑なコード実装、デバッグ |
-| **Gemini CLI** | マルチモーダル読取専用 | PDF・動画・音声・画像ファイルの内容抽出のみ |
+| Agent | Model | Role | Use For |
+|-------|-------|------|---------|
+| **Claude Code（メイン）** | Opus 4.6 | 全体統括 | ユーザー対話、コードベース分析（1M context）、タスク管理 |
+| **general-purpose（サブエージェント）** | **Sonnet**（1M context） | 調査・実装の実行部隊 | 外部情報取得、調査整理、コード実装、Codex委譲 |
+| **codex-debugger（サブエージェント）** | **Opus** | エラー解析 | Codex CLI でエラーの根本原因分析・修正提案 |
+| **gemini-explore（サブエージェント）** | **Opus** | マルチモーダル読取 | PDF・動画・音声・画像 → Gemini CLI で内容抽出 |
+| **Agent Teams チームメイト** | **Sonnet**（デフォルト） | 並列協調 | /startproject, /team-implement, /team-review |
+| **Codex CLI** | gpt-5.3-codex | 計画・難しい実装 | アーキテクチャ設計、実装計画、複雑なコード実装 |
+| **Gemini CLI** | gemini-3-pro | マルチモーダル読取専用 | ファイルの内容抽出のみ |
 
 ### 判断フロー
 
@@ -71,6 +74,15 @@ Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI
 Claude Code (Opus 4.6) のコンテキストは **1M トークン**（実質 **350-500k**、ツール定義等で縮小）。
 
 **Compaction 機能**により、長時間セッションでもサーバーサイドで自動要約される。
+
+### モデル選択方針
+
+| エージェント | モデル | 理由 |
+|------------|--------|------|
+| general-purpose | **Sonnet** | 1M context で大量のコード・調査結果を処理。/startproject の Researcher/Architect にも最適 |
+| codex-debugger | **Opus** | エラー解析には高い推論能力が必要。Codex への的確な質問生成に強い |
+| gemini-explore | **Opus** | マルチモーダル内容の正確な解釈・要約に高い推論能力が必要 |
+| Agent Teams | **Sonnet**（デフォルト） | `CLAUDE_CODE_SUBAGENT_MODEL` で設定。1M context で並列作業に対応 |
 
 ### 呼び出し基準
 

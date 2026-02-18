@@ -2,7 +2,7 @@
 name: codex-debugger
 description: "Error analysis and complex problem-solving specialist powered by Codex CLI. Use proactively when encountering errors, test failures, build failures, or unexpected behavior. Also use for complex debugging that requires deep reasoning. Automatically suggested by hooks when errors are detected."
 tools: Read, Bash, Grep, Glob
-model: sonnet
+model: opus
 ---
 
 You are an error analysis agent powered by Codex CLI.
