@@ -2,19 +2,67 @@
 
 **マルチエージェント協調フレームワーク（Opus 4.6 + Agent Teams 対応）**
 
-Claude Code が Codex CLI（深い推論）と Gemini CLI（外部情報・マルチモーダル）を統合し、Agent Teams で並列開発を加速する。
+Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI（マルチモーダル読取）を使い分ける。
 
 ---
 
-## Why This Exists
+## Agent Roles — 役割分担
 
-| Agent | Strength | Use For |
-|-------|----------|---------|
-| **Claude Code** | 1Mコンテキスト、オーケストレーション、Agent Teams | 全体統括、コードベース分析、並列チーム管理 |
-| **Codex CLI** | 深い推論、設計判断、デバッグ | 設計相談、エラー分析、トレードオフ評価 |
-| **Gemini CLI** | Google Search、マルチモーダル | 外部情報取得、ライブラリ調査、PDF/動画/音声処理 |
+| Agent | Role | Use For |
+|-------|------|---------|
+| **Claude Code（メイン）** | 全体統括 | ユーザー対話、コードベース分析（1M context）、タスク管理 |
+| **Claude Code（サブエージェント）** | 調査・実装の実行部隊 | 外部情報取得（WebSearch/WebFetch）、調査整理、コード実装 |
+| **Codex CLI** | 計画・難しい実装 | アーキテクチャ設計、実装計画、複雑なコード実装、デバッグ |
+| **Gemini CLI** | マルチモーダル読取専用 | PDF・動画・音声・画像ファイルの内容抽出のみ |
 
-> **Opus 4.6 での変化**: Claude 自身が 1M トークンのコンテキストを持つようになったため、コードベース分析は Claude が直接行う。Gemini の役割は「外部情報の取得」と「マルチモーダル処理」に特化した。
+### 判断フロー
+
+```
+タスク受信
+  ├── マルチモーダルファイル（PDF/動画/音声/画像）がある？
+  │     → YES: Gemini にファイルを渡して内容抽出
+  │
+  ├── 計画・設計・難しいコードが必要？
+  │     → YES: Codex に相談 or 実装させる
+  │
+  ├── 外部情報・リサーチが必要？
+  │     → YES: サブエージェント（WebSearch/WebFetch）
+  │
+  └── 通常のコード実装？
+        → メインが直接 or サブエージェントに委託
+```
+
+---
+
+## Quick Reference
+
+### Codex を使う時
+
+- **計画・設計**（「どう実装？」「アーキテクチャ」「計画を立てて」）
+- **難しいコード実装**（複雑なアルゴリズム、最適化、マルチステップ実装）
+- **デバッグ**（「なぜ動かない？」「エラーの原因は？」）
+- **比較検討**（「AとBどちらがいい？」「トレードオフは？」）
+
+→ 詳細: `.claude/rules/codex-delegation.md`
+
+### Gemini を使う時
+
+- **マルチモーダルファイルの読取のみ（必須・自動委譲）**
+  - PDF、動画、音声、画像ファイルが登場したら、ユーザー指示を待たず自動で Gemini に渡す
+  ```bash
+  gemini -p "{抽出したい情報}" < /path/to/file 2>/dev/null
+  ```
+
+> **Gemini は外部リサーチには使わない**。外部情報の取得はサブエージェントが WebSearch/WebFetch で行う。
+> スクリーンショットの単純確認は Claude の Read ツールで直接可能。
+
+→ 詳細: `.claude/rules/gemini-delegation.md`
+
+### サブエージェントを使う時
+
+- **外部情報取得**（最新ドキュメント、ライブラリ調査）→ WebSearch/WebFetch
+- **調査結果の整理** → `.claude/docs/research/` に保存
+- **コード実装**（メインのコンテキストを節約したい場合）
 
 ---
 
@@ -24,7 +72,7 @@ Claude Code (Opus 4.6) のコンテキストは **1M トークン**（実質 **3
 
 **Compaction 機能**により、長時間セッションでもサーバーサイドで自動要約される。
 
-### Codex/Gemini 呼び出し基準
+### 呼び出し基準
 
 | 出力サイズ | 方法 | 理由 |
 |-----------|------|------|
@@ -36,29 +84,8 @@ Claude Code (Opus 4.6) のコンテキストは **1M トークン**（実質 **3
 
 | 目的 | 方法 | 適用場面 |
 |------|------|----------|
-| 結果を取得するだけ | サブエージェント | Codex設計相談、Gemini調査 |
-| 相互通信が必要 | **Agent Teams** | Research↔Design、並列実装、並列レビュー |
-
----
-
-## Quick Reference
-
-### Codex を使う時
-
-- 設計判断（「どう実装？」「どのパターン？」）
-- デバッグ（「なぜ動かない？」「エラーの原因は？」）
-- 比較検討（「AとBどちらがいい？」）
-
-→ 詳細: `.claude/rules/codex-delegation.md`
-
-### Gemini を使う時
-
-- 外部リサーチ（「最新のドキュメントは？」「ライブラリを調べて」）
-- マルチモーダル（「このPDF/動画/音声を見て」）
-
-> **注意**: コードベース分析は Claude が直接行う。Gemini への委託は不要。
-
-→ 詳細: `.claude/rules/gemini-delegation.md`
+| 結果を取得するだけ | サブエージェント | Codex相談、調査、実装 |
+| 相互通信が必要 | **Agent Teams** | 並列実装、並列レビュー |
 
 ---
 
@@ -73,7 +100,7 @@ Claude Code (Opus 4.6) のコンテキストは **1M トークン**（実質 **3
 ```
 
 1. Claude がコードベースを直接読み（1Mコンテキスト）、ユーザーと要件ヒアリング
-2. Agent Teams で Researcher（Gemini）+ Architect（Codex）を並列起動
+2. サブエージェントで外部調査 + Codex で設計・計画（並列可）
 3. Claude が調査と設計を統合し、計画をユーザーに提示
 4. 承認後、`/team-implement` で並列実装
 5. `/team-review` で並列レビュー
@@ -98,7 +125,7 @@ Claude Code (Opus 4.6) のコンテキストは **1M トークン**（実質 **3
 |----------|---------|
 | `.claude/rules/` | コーディング・セキュリティ・言語ルール |
 | `.claude/docs/DESIGN.md` | 設計決定の記録 |
-| `.claude/docs/research/` | 調査結果（Gemini / レビュー） |
+| `.claude/docs/research/` | 調査結果（サブエージェント / レビュー） |
 | `.claude/docs/libraries/` | ライブラリ制約ドキュメント |
 | `.claude/logs/cli-tools.jsonl` | Codex/Gemini入出力ログ |
 
