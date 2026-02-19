@@ -103,7 +103,7 @@ def main() -> None:
     else:
         tool = "gemini"
         prompt = extract_gemini_prompt(command)
-        model = "gemini-3-pro-preview"
+        model = "gemini-3-pro-preview"  # Must match .gemini/settings.json
 
     if not prompt:
         # Could not extract prompt, skip logging

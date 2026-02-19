@@ -138,11 +138,11 @@ Cross-reference with our codebase to identify:
 
 | Task | Reason | Use Instead |
 |------|--------|-------------|
-| Design decisions | Requires deep reasoning | Codex |
-| Code implementation | Codex has better code abilities | Codex |
-| Debugging | Requires logical analysis | Codex |
+| Design decisions / planning | Requires deep reasoning about trade-offs | Codex |
+| Code implementation | Writing code is Claude/Codex's job | Claude Code / Codex |
+| Debugging (root cause analysis) | Requires logical analysis + code execution | Codex |
 | Simple file edits | Overkill | Claude Code directly |
-| Running tests | Execution task | Claude Code directly |
+| Running tests / git operations | Execution tasks | Claude Code directly |
 
 ## Output Handling
 
