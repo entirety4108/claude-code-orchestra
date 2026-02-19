@@ -4,7 +4,7 @@ description: |
   Codex CLI handles planning, design, and complex code implementation.
   Use for: architecture design, implementation planning, complex algorithms,
   debugging (root cause analysis), trade-off evaluation, code review.
-  External research is NOT Codex's job — use subagent with WebSearch instead.
+  External research is NOT Codex's job — use Gemini CLI (Google Search grounding) instead.
   Explicit triggers: "plan", "design", "architecture", "think deeper",
   "analyze", "debug", "complex", "optimize".
 metadata:
@@ -50,9 +50,9 @@ metadata:
 - 単純なファイル編集、typo修正
 - 明示的なユーザー指示に従うだけの作業
 - git commit、テスト実行、lint
-- **コードベース分析** → Claude が直接行う（1M context）
-- **外部情報取得** → サブエージェント（WebSearch/WebFetch）
-- **マルチモーダル処理** → Gemini
+- **コードベース分析** → Gemini CLI（1M context で大規模分析対応）
+- **外部情報取得** → Gemini CLI（Google Search grounding）
+- **マルチモーダル処理** → Gemini CLI（PDF/動画/音声/画像）
 
 ## How to Consult
 

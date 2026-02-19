@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-PreToolUse hook: Suggest using subagent for deep research tasks.
+PreToolUse hook: Suggest using Gemini for deep research tasks.
 
 Analyzes web search/fetch operations and suggests delegating
-comprehensive research to a subagent to preserve main context.
-
-NOTE: Gemini is NOT used for research. External research is done
-via WebSearch/WebFetch in subagents.
+comprehensive research to Gemini CLI (1M context + Google Search grounding)
+via the gemini-explore subagent to preserve main context.
 """
 
 import json
 import sys
 
-# Keywords that suggest deep research would benefit from a subagent
+# Keywords that suggest deep research would benefit from Gemini
 RESEARCH_INDICATORS = [
     "documentation",
     "best practice",
@@ -31,7 +29,7 @@ RESEARCH_INDICATORS = [
     "specification",
 ]
 
-# Simple lookups that don't need a subagent
+# Simple lookups that don't need Gemini
 SIMPLE_LOOKUP_PATTERNS = [
     "error message",
     "stack trace",
@@ -41,8 +39,8 @@ SIMPLE_LOOKUP_PATTERNS = [
 ]
 
 
-def should_suggest_subagent(query: str, url: str = "") -> tuple[bool, str]:
-    """Determine if a subagent should be suggested for this research."""
+def should_suggest_gemini(query: str, url: str = "") -> tuple[bool, str]:
+    """Determine if Gemini should be suggested for this research."""
     query_lower = query.lower()
     url_lower = url.lower()
     combined = f"{query_lower} {url_lower}"
@@ -79,18 +77,19 @@ def main():
             url = tool_input.get("url", "")
             query = tool_input.get("prompt", "")
 
-        should_suggest, reason = should_suggest_subagent(query, url)
+        should_suggest, reason = should_suggest_gemini(query, url)
 
         if should_suggest:
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "additionalContext": (
-                        f"[Research Suggestion] {reason}. "
-                        "For comprehensive research, consider using a subagent "
-                        "(Task tool with subagent_type='general-purpose') "
-                        "to gather and organize findings, saving results to "
-                        ".claude/docs/research/. This preserves main context."
+                        f"[Gemini Research Suggestion] {reason}. "
+                        "For comprehensive research, consider using Gemini CLI "
+                        "(1M context + Google Search grounding) via the gemini-explore "
+                        "subagent (Task tool with subagent_type='gemini-explore'). "
+                        "Gemini can gather and organize findings more efficiently. "
+                        "Save results to .claude/docs/research/."
                     )
                 }
             }

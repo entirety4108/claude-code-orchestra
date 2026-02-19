@@ -2,7 +2,7 @@
 name: startproject
 description: |
   Start a new project/feature with multi-agent collaboration (Opus 4.6 + Agent Teams).
-  Phase 1: Codebase understanding (Claude 1M context).
+  Phase 1: Codebase understanding (Gemini 1M context + Claude user interaction).
   Phase 2: Parallel research & design (Agent Teams: Researcher + Architect).
   Phase 3: Plan synthesis & user approval.
   Implementation is handled separately by /team-implement.
@@ -12,7 +12,7 @@ metadata:
 
 # Start Project
 
-**Opus 4.6 の 1M コンテキストと Agent Teams を活用したプロジェクト開始スキル。**
+**Gemini の 1M コンテキストと Agent Teams を活用したプロジェクト開始スキル。**
 
 ## Overview
 
@@ -29,11 +29,11 @@ metadata:
 ## Workflow
 
 ```
-Phase 1: UNDERSTAND (Claude Lead — 1M context)
-  Claude がコードベースを直接読み、ユーザーと対話して要件を理解
+Phase 1: UNDERSTAND (Gemini 1M context + Claude Lead)
+  Gemini がコードベースを分析（1M context）、Claude がユーザーと対話
     ↓
 Phase 2: RESEARCH & DESIGN (Agent Teams — 並列)
-  Researcher ←→ Architect が双方向通信しながら調査・設計
+  Researcher（Gemini）←→ Architect（Codex）が双方向通信しながら調査・設計
     ↓
 Phase 3: PLAN & APPROVE (Claude Lead + User)
   調査と設計を統合し、計画を作成してユーザー承認
@@ -41,29 +41,35 @@ Phase 3: PLAN & APPROVE (Claude Lead + User)
 
 ---
 
-## Phase 1: UNDERSTAND (Claude Lead)
+## Phase 1: UNDERSTAND (Gemini + Claude Lead)
 
-**Claude が 1M コンテキストで直接コードベースを読み、ユーザーと対話する。**
+**Gemini の 1M コンテキストでコードベースを分析し、Claude がユーザーと対話する。**
 
-> Opus 4.6 は 1M トークンのコンテキストを持つ。Gemini にコードベース分析を委託する必要はなくなった。
+> Claude Code のコンテキストは 200K。大規模コードベースの全体分析は Gemini（1M context）に委譲する。
 
-### Step 1: Read Codebase
+### Step 1: Analyze Codebase with Gemini
 
-Explore agent またはGlob/Grep/Read を使い、コードベースを直接読む：
+Gemini CLI を使い、コードベース全体を分析する：
 
-- ディレクトリ構造
-- 主要モジュールと責務
-- 既存のパターン・規約
-- 関連する既存コード
-- テスト構造
+```bash
+# gemini-explore サブエージェント経由（推奨）
+Task tool:
+  subagent_type: "gemini-explore"
+  prompt: |
+    Analyze this codebase comprehensively:
+    - Directory structure and organization
+    - Key modules and their responsibilities
+    - Existing patterns and conventions
+    - Dependencies and tech stack
+    - Test structure
 
+    gemini -p "Analyze this codebase: directory structure, key modules, architecture patterns, dependencies, conventions, and test structure" 2>/dev/null
+
+    Save analysis to .claude/docs/research/{feature}-codebase.md
+    Return concise summary (5-7 key findings).
 ```
-Explore agent / Glob / Grep / Read を使い、以下を把握:
-- プロジェクト構造
-- 関連する既存コードとパターン
-- 技術スタック・依存関係
-- テスト構造
-```
+
+Gemini の分析結果を補完するため、Claude は Glob/Grep/Read で特定ファイルを確認できる。
 
 ### Step 2: Requirements Gathering
 
@@ -120,7 +126,7 @@ Create an agent team for project planning: {feature}
 
 Spawn two teammates:
 
-1. **Researcher** — WebSearch/WebFetch で外部調査を行う
+1. **Researcher** — Gemini CLI (1M context + Google Search grounding) で外部調査を行う
    Prompt: "You are the Researcher for project: {feature}.
 
    Your job: Research external information needed for this project.
@@ -135,9 +141,9 @@ Spawn two teammates:
    4. Look for similar implementations and reference architectures
 
    How to research:
-   - Use WebSearch tool for finding information
-   - Use WebFetch tool for reading specific documentation pages
-   - Do NOT use Gemini CLI (Gemini is only for multimodal file reading)
+   - Use Gemini CLI for comprehensive research (1M context + Google Search grounding):
+     gemini -p 'Research: {topic}. Find latest best practices, constraints, and recommendations' 2>/dev/null
+   - Use WebSearch/WebFetch for targeted lookups when needed
 
    Save all findings to .claude/docs/research/{feature}.md
    Save library docs to .claude/docs/libraries/{library}.md
@@ -339,8 +345,8 @@ Present the plan in Japanese:
 
 ## Tips
 
-- **Phase 1**: Claude は 1M コンテキストでコードベースを直接読める。Gemini への委託は不要
-- **Phase 2**: Agent Teams の双方向通信により、調査と設計が相互に影響し合える
+- **Phase 1**: Gemini（1M context）でコードベースを分析し、Claude がユーザーと対話する
+- **Phase 2**: Agent Teams の双方向通信により、Researcher（Gemini）と Architect（Codex）が相互に影響し合える
 - **Phase 3**: 計画承認後、`/team-implement` で並列実装に進む
 - **Ctrl+T**: タスクリストの表示切り替え
 - **Shift+Up/Down**: チームメイト間の移動（Agent Teams 使用時）

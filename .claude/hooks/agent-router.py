@@ -4,8 +4,9 @@ UserPromptSubmit hook: Route to appropriate agent based on user intent.
 
 Routing rules:
 - Multimodal files (PDF/video/audio/image) → Gemini CLI (HIGHEST PRIORITY)
+- Codebase understanding / large analysis → Gemini CLI (1M context)
+- External research / survey → Gemini CLI (Google Search grounding)
 - Planning, design, complex code → Codex CLI
-- External research → Subagent with WebSearch/WebFetch
 """
 
 import json
@@ -58,17 +59,21 @@ CODEX_TRIGGERS = {
     ],
 }
 
-# Triggers for external research (handled by subagent, NOT Gemini)
-RESEARCH_TRIGGERS = {
+# Triggers for Gemini research (codebase analysis + external research)
+GEMINI_RESEARCH_TRIGGERS = {
     "ja": [
-        "調べて", "リサーチ", "調査",
+        "調べて", "リサーチ", "調査", "サーベイ",
         "最新", "ドキュメント",
         "ライブラリ", "パッケージ",
+        "コードベース", "リポジトリ", "全体構造",
+        "理解して", "把握して",
     ],
     "en": [
-        "research", "investigate", "look up", "find out",
+        "research", "investigate", "look up", "find out", "survey",
         "latest", "documentation", "docs",
         "library", "package", "framework",
+        "codebase", "repository", "project structure",
+        "understand", "analyze the code",
     ],
 }
 
@@ -99,11 +104,11 @@ def detect_agent(prompt: str) -> tuple[str | None, str, bool]:
             if trigger in prompt_lower:
                 return "codex", trigger, False
 
-    # Research triggers → subagent (NOT Gemini)
-    for triggers in RESEARCH_TRIGGERS.values():
+    # Gemini research triggers (codebase analysis + external research)
+    for triggers in GEMINI_RESEARCH_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
-                return "research-subagent", trigger, False
+                return "gemini-research", trigger, False
 
     return None, "", False
 
@@ -149,15 +154,16 @@ def main():
             }
             print(json.dumps(output))
 
-        elif agent == "research-subagent":
+        elif agent == "gemini-research":
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext": (
-                        f"[Research Detected] Detected '{trigger}' — use a subagent "
-                        "(Task tool with subagent_type='general-purpose') with "
-                        "WebSearch/WebFetch for external research. "
-                        "Do NOT use Gemini for research — Gemini is multimodal file reading only. "
+                        f"[Gemini Research] Detected '{trigger}' — use Gemini CLI (1M context) "
+                        "for this task. Gemini handles codebase analysis and external research "
+                        "with its native 1M context and Google Search grounding. "
+                        "Use via gemini-explore subagent or direct call: "
+                        '`gemini -p "{research/analysis prompt}" 2>/dev/null` '
                         "Save results to .claude/docs/research/."
                     )
                 }
