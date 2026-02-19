@@ -4,8 +4,9 @@ UserPromptSubmit hook: Route to appropriate agent based on user intent.
 
 Routing rules:
 - Multimodal files (PDF/video/audio/image) → Gemini CLI (HIGHEST PRIORITY)
-- Research, library investigation, codebase analysis → Gemini CLI
-- Planning, design, complex code, debugging → Codex CLI
+- Codebase understanding / large analysis → Gemini CLI (1M context)
+- External research / survey → Gemini CLI (Google Search grounding)
+- Planning, design, complex code → Codex CLI
 """
 
 import json
@@ -58,21 +59,21 @@ CODEX_TRIGGERS = {
     ],
 }
 
-# Triggers for Gemini research (codebase analysis, library research, documentation)
+# Triggers for Gemini research (codebase analysis + external research)
 GEMINI_RESEARCH_TRIGGERS = {
     "ja": [
         "調べて", "リサーチ", "調査", "サーベイ",
         "最新", "ドキュメント",
         "ライブラリ", "パッケージ",
-        "コードベース", "全体構造", "依存関係",
-        "移行", "マイグレーション",
+        "コードベース", "リポジトリ", "全体構造",
+        "理解して", "把握して",
     ],
     "en": [
         "research", "investigate", "look up", "find out", "survey",
         "latest", "documentation", "docs",
         "library", "package", "framework",
-        "codebase", "repository", "architecture overview",
-        "migration", "dependencies",
+        "codebase", "repository", "project structure",
+        "understand", "analyze the code",
     ],
 }
 
@@ -97,17 +98,17 @@ def detect_agent(prompt: str) -> tuple[str | None, str, bool]:
     if multimodal_file:
         return "gemini-multimodal", multimodal_file, True
 
-    # Research triggers → Gemini (leveraging 1M context + Google Search)
-    for triggers in GEMINI_RESEARCH_TRIGGERS.values():
-        for trigger in triggers:
-            if trigger in prompt_lower:
-                return "gemini-research", trigger, False
-
     # Codex triggers (planning, design, debug, complex code)
     for triggers in CODEX_TRIGGERS.values():
         for trigger in triggers:
             if trigger in prompt_lower:
                 return "codex", trigger, False
+
+    # Gemini research triggers (codebase analysis + external research)
+    for triggers in GEMINI_RESEARCH_TRIGGERS.values():
+        for trigger in triggers:
+            if trigger in prompt_lower:
+                return "gemini-research", trigger, False
 
     return None, "", False
 
@@ -138,21 +139,6 @@ def main():
             }
             print(json.dumps(output))
 
-        elif agent == "gemini-research":
-            output = {
-                "hookSpecificOutput": {
-                    "hookEventName": "UserPromptSubmit",
-                    "additionalContext": (
-                        f"[Research Detected] Detected '{trigger}' — this task benefits from "
-                        "Gemini CLI's 1M token context and Google Search integration. Consider: "
-                        '`gemini -p "Research: {topic}" 2>/dev/null` for external research, '
-                        "or use the gemini-explore subagent for large analysis tasks. "
-                        "Save results to .claude/docs/research/ or .claude/docs/libraries/."
-                    )
-                }
-            }
-            print(json.dumps(output))
-
         elif agent == "codex":
             output = {
                 "hookSpecificOutput": {
@@ -163,6 +149,22 @@ def main():
                         "`codex exec --model gpt-5.3-codex --sandbox read-only --full-auto "
                         '"{task description}"` for design decisions, planning, debugging, '
                         "or complex analysis."
+                    )
+                }
+            }
+            print(json.dumps(output))
+
+        elif agent == "gemini-research":
+            output = {
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": (
+                        f"[Gemini Research] Detected '{trigger}' — use Gemini CLI (1M context) "
+                        "for this task. Gemini handles codebase analysis and external research "
+                        "with its native 1M context and Google Search grounding. "
+                        "Use via gemini-explore subagent or direct call: "
+                        '`gemini -p "{research/analysis prompt}" 2>/dev/null` '
+                        "Save results to .claude/docs/research/."
                     )
                 }
             }

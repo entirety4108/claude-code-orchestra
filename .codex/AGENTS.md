@@ -30,9 +30,9 @@ You provide **planning, design expertise, and complex implementation** capabilit
 
 | Task | Who Does It |
 |------|-------------|
-| External research / web search | **Subagent** (WebSearch/WebFetch) |
-| Multimodal file reading, codebase analysis, external research | **Gemini CLI** (1M context + Google Search) |
-| Codebase analysis | **Claude Code** (1M context) |
+| External research / web search | **Gemini CLI** (Google Search grounding) |
+| Codebase analysis | **Gemini CLI** (1M context) |
+| Multimodal file reading | **Gemini CLI** |
 | Simple file edits | **Claude Code** |
 | Git operations | **Claude Code** |
 

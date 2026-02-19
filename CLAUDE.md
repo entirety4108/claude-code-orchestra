@@ -2,7 +2,7 @@
 
 **マルチエージェント協調フレームワーク（Opus 4.6 + Agent Teams 対応）**
 
-Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI（読取・分析・リサーチ）を使い分ける。
+Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI（1M context 活用）を使い分ける。
 
 ---
 
@@ -13,20 +13,17 @@ Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI
 | **Claude Code（メイン）** | Opus 4.6 | 全体統括 | ユーザー対話、タスク管理、簡潔なコード編集 |
 | **general-purpose（サブエージェント）** | **Opus** | 実装・Codex委譲 | コード実装、Codex委譲、ファイル操作 |
 | **codex-debugger（サブエージェント）** | **Opus** | エラー解析 | Codex CLI でエラーの根本原因分析・修正提案 |
-| **gemini-explore（サブエージェント）** | **Opus** | 読取・分析・リサーチ | Gemini CLI でマルチモーダル読取、コードベース分析、外部リサーチ |
-| **Agent Teams チームメイト** | **Sonnet**（デフォルト） | 並列協調 | /startproject, /team-implement, /team-review |
+| **gemini-explore（サブエージェント）** | **Opus** | 大規模分析・調査 | コードベース理解、外部リサーチ、マルチモーダル読取（1M context） |
+| **Agent Teams チームメイト** | **Opus**（デフォルト） | 並列協調 | /startproject, /team-implement, /team-review |
 | **Codex CLI** | gpt-5.3-codex | 計画・難しい実装 | アーキテクチャ設計、実装計画、複雑なコード実装 |
-| **Gemini CLI** | gemini-3-pro-preview | 読取・分析・リサーチ | マルチモーダル読取、コードベース分析（1M context）、外部リサーチ（Google Search） |
+| **Gemini CLI** | gemini-3-pro | 1M context エージェント | コードベース分析、リサーチ、マルチモーダル読取 |
 
 ### 判断フロー
 
 ```
 タスク受信
   ├── マルチモーダルファイル（PDF/動画/音声/画像）がある？
-  │     → YES: Gemini にファイルを渡して内容抽出（自動委譲）
-  │
-  ├── 外部リサーチ・ライブラリ調査・コードベース分析が必要？
-  │     → YES: Gemini に委譲（1M context + Google Search）
+  │     → YES: Gemini にファイルを渡して内容抽出
   │
   ├── コードベース全体の理解・大規模分析が必要？
   │     → YES: Gemini に委譲（1M context 活用）
@@ -56,20 +53,24 @@ Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI
 
 ### Gemini を使う時
 
+Gemini CLI は **1M トークンのコンテキスト**を持ち、以下の3つの役割を担う:
+
 - **マルチモーダルファイル読取（必須・自動委譲）**
-  - PDF、動画、音声、画像ファイルが登場したら、ユーザー指示を待たず自動で Gemini に渡す
+  - PDF、動画、音声、画像ファイルが登場したら自動で Gemini に渡す
   ```bash
   gemini -p "{抽出したい情報}" < /path/to/file 2>/dev/null
   ```
-- **コードベース分析（1M コンテキスト活用）**
-  - リポジトリ全体の構造理解、データフロー追跡、移行分析
+- **コードベース・リポジトリ理解**
+  - プロジェクト全体の構造分析、パターン把握、依存関係の理解
+  - メインの 200K コンテキストでは収まらない大規模分析を委譲
   ```bash
-  gemini -p "Analyze: {analysis question}" 2>/dev/null
+  gemini -p "Analyze this codebase: structure, key modules, patterns, dependencies" 2>/dev/null
   ```
-- **外部リサーチ（Google Search 活用）**
-  - ライブラリ調査、最新ドキュメント、ベストプラクティス
+- **外部リサーチ・サーベイ**
+  - 最新ドキュメント調査、ライブラリ比較、ベストプラクティス調査
+  - Gemini の Google Search grounding を活用
   ```bash
-  gemini -p "Research: {research question}" 2>/dev/null
+  gemini -p "Research: {topic}. Find latest best practices, constraints, and recommendations" 2>/dev/null
   ```
 
 > スクリーンショットの単純確認は Claude の Read ツールで直接可能。
@@ -78,8 +79,6 @@ Claude Code が全体統括し、Codex CLI（計画・難実装）と Gemini CLI
 
 ### サブエージェントを使う時
 
-- **Gemini の大規模出力処理** → gemini-explore サブエージェント経由
-- **調査結果の整理** → `.claude/docs/research/` に保存
 - **コード実装**（メインのコンテキストを節約したい場合）
 - **Codex 委譲**（計画・設計の相談をサブエージェント経由で）
 - **調査結果の整理** → `.claude/docs/research/` に保存
@@ -101,8 +100,8 @@ Claude Code (Opus 4.6) のコンテキストは **200K トークン**（実質 *
 |------------|--------|------|
 | general-purpose | **Opus** | 高い推論能力でコード実装・Codex委譲を高品質に実行 |
 | codex-debugger | **Opus** | エラー解析には高い推論能力が必要。Codex への的確な質問生成に強い |
-| gemini-explore | **Opus** | マルチモーダル読取・コード分析・リサーチ結果の正確な解釈に高い推論能力が必要 |
-| Agent Teams | **Sonnet**（デフォルト） | `CLAUDE_CODE_SUBAGENT_MODEL` で設定。1M context で並列作業に対応 |
+| gemini-explore | **Opus** | Gemini CLI（1M context）を活用した大規模分析・調査・マルチモーダル処理の統括 |
+| Agent Teams | **Opus**（デフォルト） | `CLAUDE_CODE_SUBAGENT_MODEL` で設定。高い推論能力で並列作業に対応 |
 
 ### 呼び出し基準
 
