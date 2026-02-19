@@ -5,9 +5,9 @@
 Multi-Agent AI Development Environment
 
 ```
-Claude Code (Orchestrator) ─┬─ Codex CLI (Deep Reasoning)
-                            ├─ Gemini CLI (Research)
-                            └─ Subagents (Parallel Tasks)
+Claude Code (Orchestrator, 200K) ─┬─ Codex CLI (Planning & Complex Code)
+                                   ├─ Gemini CLI (1M context: Analysis, Research, Multimodal)
+                                   └─ Subagents/Opus (Implementation, Codex Delegation)
 ```
 
 ## Quick Start
@@ -45,34 +45,37 @@ gemini login
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│           Claude Code (Orchestrator)                        │
+│           Claude Code (Orchestrator — 200K context)          │
 │           → コンテキスト節約が最優先                         │
-│           → ユーザー対話・調整・実行を担当                   │
+│           → ユーザー対話・調整・簡潔な編集を担当             │
 │                      ↓                                      │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              Subagent (general-purpose)               │  │
-│  │              → 独立したコンテキストを持つ               │  │
-│  │              → Codex/Gemini を呼び出し可能             │  │
-│  │              → 結果を要約してメインに返す              │  │
-│  │                                                       │  │
-│  │   ┌──────────────┐        ┌──────────────┐           │  │
-│  │   │  Codex CLI   │        │  Gemini CLI  │           │  │
-│  │   │  設計・推論  │        │  リサーチ    │           │  │
-│  │   │  デバッグ    │        │  マルチモーダル│          │  │
-│  │   └──────────────┘        └──────────────┘           │  │
-│  └───────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────┐  ┌──────────────────────────┐    │
+│  │  Subagent (Opus)      │  │  gemini-explore (Opus)    │    │
+│  │  general-purpose      │  │  → Gemini CLI 1M context  │    │
+│  │  → コード実装         │  │  → コードベース分析       │    │
+│  │  → Codex委譲          │  │  → 外部リサーチ           │    │
+│  │                       │  │  → マルチモーダル読取     │    │
+│  │  ┌──────────────┐    │  │                            │    │
+│  │  │  Codex CLI   │    │  │  ┌──────────────┐          │    │
+│  │  │  設計・推論  │    │  │  │  Gemini CLI  │          │    │
+│  │  │  デバッグ    │    │  │  │  1M context  │          │    │
+│  │  └──────────────┘    │  │  └──────────────┘          │    │
+│  └──────────────────────┘  └──────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### コンテキスト管理（重要）
 
-メインオーケストレーターのコンテキストを節約するため、大きな出力が予想されるタスクはサブエージェント経由で実行します。
+メインオーケストレーター（200K context）を節約するため、大規模タスクは適切なエージェントに委譲します。
 
 | 状況 | 推奨方法 |
 |------|----------|
-| 大きな出力が予想される | サブエージェント経由 |
+| コードベース全体分析 | **Gemini 経由**（1M context） |
+| 外部リサーチ・サーベイ | **Gemini 経由**（Google Search grounding） |
+| マルチモーダルファイル | **Gemini 経由** |
+| コード実装 | サブエージェント（Opus）経由 |
+| 設計・計画相談 | サブエージェント → Codex |
 | 短い質問・短い回答 | 直接呼び出しOK |
-| Codex/Gemini相談 | サブエージェント経由 |
 | 詳細な分析が必要 | サブエージェント経由 → ファイル保存 |
 
 ## Directory Structure
@@ -86,9 +89,9 @@ gemini login
 │
 ├── .claude/
 │   ├── agents/
-│   │   ├── general-purpose.md   # 汎用サブエージェント
-│   │   ├── codex-debugger.md    # エラー分析エージェント
-│   │   └── gemini-explore.md    # コードベース探索エージェント
+│   │   ├── general-purpose.md   # 実装・Codex委譲エージェント (Opus)
+│   │   ├── codex-debugger.md    # エラー分析エージェント (Opus)
+│   │   └── gemini-explore.md    # 大規模分析・調査エージェント (Opus)
 │   │
 │   ├── skills/                  # 再利用可能なワークフロー
 │   │   ├── startproject/        # プロジェクト開始
@@ -111,7 +114,7 @@ gemini login
 │   │
 │   ├── docs/
 │   │   ├── DESIGN.md            # 設計決定記録
-│   │   ├── research/            # Gemini調査結果
+│   │   ├── research/            # 調査結果（Gemini/サブエージェント）
 │   │   └── libraries/           # ライブラリ制約
 │   │
 │   └── logs/
@@ -137,10 +140,10 @@ gemini login
 ```
 
 **ワークフロー:**
-1. **Gemini** → リポジトリ分析・事前調査
-2. **Claude** → 要件ヒアリング・計画作成
-3. **Codex** → 計画レビュー・リスク分析
-4. **Claude** → タスクリスト作成
+1. **Gemini** → コードベース分析・事前調査（1M context）
+2. **Claude** → ユーザーと要件ヒアリング
+3. **Agent Teams** → Researcher（Gemini）↔ Architect（Codex）で並列調査・設計
+4. **Claude** → 計画統合・ユーザー承認
 
 ### `/plan` — 実装計画
 
@@ -190,12 +193,12 @@ Red-Green-Refactorサイクルで実装します。
 
 ### `/gemini-system` — Gemini CLI連携
 
-リサーチ・大規模分析・マルチモーダル処理に使用します。
+Gemini の 1M context を活用した大規模分析・リサーチ・マルチモーダル処理。
 
 **トリガー例:**
-- 「調べて」「リサーチして」
+- 「コードベースを理解して」「全体構造を分析して」
+- 「調べて」「リサーチして」「サーベイして」
 - 「このPDF/動画を見て」
-- 「コードベース全体を理解して」
 
 ### `/simplify` — コードリファクタリング
 
