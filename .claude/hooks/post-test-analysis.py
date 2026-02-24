@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 PostToolUse hook: Suggest Codex analysis after test/build failures.
 
@@ -115,10 +115,13 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",
                     "additionalContext": (
-                        f"[Codex Debug Suggestion] {reason}. "
-                        "Consider consulting Codex for debugging analysis. "
-                        "**Recommended**: Use Task tool with subagent_type='general-purpose' "
-                        "to consult Codex with full error context and preserve main context."
+                        f"[Codex Debug Required] {reason}. "
+                        "**Do NOT attempt to fix this yourself**. "
+                        "Delegate to codex-debugger subagent: "
+                        "Task(subagent_type='codex-debugger', prompt='Fix this failure: {paste error output}') "
+                        "Or use Codex directly: "
+                        "`codex exec --model gpt-5.3-codex --sandbox workspace-write --full-auto "
+                        "'Fix the failing tests. Error: {paste error}'`"
                     )
                 }
             }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 UserPromptSubmit hook: Route to appropriate agent based on user intent.
 
@@ -45,6 +45,16 @@ CODEX_TRIGGERS = {
         "レビュー",
         "考えて", "分析して", "深く",
         "最適化",
+        # Implementation delegation triggers
+        "実装して", "実装する", "実装を",
+        "作って", "作成して", "作る",
+        "書いて", "コードを書",
+        "追加して", "追加する",
+        "機能を", "機能追加",
+        "開発して", "開発する",
+        "修正して", "修正する",
+        "変更して", "変更する",
+        "対応して", "対応する",
     ],
     "en": [
         "design", "architecture", "architect",
@@ -56,6 +66,11 @@ CODEX_TRIGGERS = {
         "review", "check this",
         "think", "analyze", "deeply",
         "optimize", "performance",
+        # Implementation delegation triggers
+        "implement", "create", "write", "add", "build",
+        "feature", "develop", "fix", "update", "modify",
+        "generate code", "write code", "write a", "write the",
+        "add a", "add the", "create a", "create the",
     ],
 }
 
@@ -144,11 +159,14 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext": (
-                        f"[Agent Routing] Detected '{trigger}' — this task may benefit from "
-                        "Codex CLI for planning, design, or complex implementation. Consider: "
+                        f"[Codex Delegation] Detected '{trigger}' — **delegate this task to Codex**. "
+                        "For implementation tasks use workspace-write sandbox: "
+                        "`codex exec --model gpt-5.3-codex --sandbox workspace-write --full-auto "
+                        '"{task description}"`. '
+                        "For planning/analysis use read-only sandbox: "
                         "`codex exec --model gpt-5.3-codex --sandbox read-only --full-auto "
-                        '"{task description}"` for design decisions, planning, debugging, '
-                        "or complex analysis."
+                        '"{task description}"`. '
+                        "Prefer Task tool with subagent_type='general-purpose' to preserve main context."
                     )
                 }
             }

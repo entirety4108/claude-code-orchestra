@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 PostToolUse hook: Suggest Codex review after significant implementations.
 
@@ -31,8 +31,8 @@ def validate_input(file_path: str, content: str) -> bool:
 STATE_FILE = "/tmp/claude-code-implementation-state.json"
 
 # Thresholds for suggesting review
-MIN_FILES_FOR_REVIEW = 3
-MIN_LINES_FOR_REVIEW = 100
+MIN_FILES_FOR_REVIEW = 2
+MIN_LINES_FOR_REVIEW = 50
 
 
 def load_state() -> dict:
@@ -119,10 +119,13 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",
                     "additionalContext": (
-                        f"[Code Review Suggestion] {reason} in this session. "
-                        "Consider having Codex review the implementation. "
-                        "**Recommended**: Use Task tool with subagent_type='general-purpose' "
-                        "to consult Codex with git diff and preserve main context."
+                        f"[Codex Takeover] {reason} written directly in this session. "
+                        "**From here on, delegate remaining implementation to Codex**: "
+                        "`codex exec --model gpt-5.3-codex --sandbox workspace-write --full-auto "
+                        "'{describe what still needs to be implemented}'` "
+                        "Also consider having Codex review what was already written: "
+                        "`codex exec --model gpt-5.3-codex --sandbox read-only --full-auto "
+                        "'Review the recent changes in git diff and suggest improvements'`"
                     )
                 }
             }

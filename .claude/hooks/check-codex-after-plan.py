@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 PostToolUse hook: Suggest Codex review after Plan tasks.
 
@@ -63,10 +63,12 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",
                     "additionalContext": (
-                        f"[Codex Review Suggestion] {reason}. "
-                        "Consider having Codex review this plan for potential improvements. "
-                        "**Recommended**: Use Task tool with subagent_type='general-purpose' "
-                        "to consult Codex and preserve main context."
+                        f"[Codex Implementation] {reason}. "
+                        "**Next step**: Have Codex implement this plan directly — do NOT write code yourself. "
+                        "Use Task tool with subagent_type='general-purpose': "
+                        "`codex exec --model gpt-5.3-codex --sandbox workspace-write --full-auto "
+                        "'{paste the plan and ask Codex to implement it}'` "
+                        "Codex can read the workspace and write files autonomously."
                     )
                 }
             }

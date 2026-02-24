@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 PreToolUse hook: Check if Codex consultation is recommended before Write/Edit.
 
@@ -68,10 +68,12 @@ SIMPLE_EDIT_PATTERNS = [
 ]
 
 
+SOURCE_EXTENSIONS = [".py", ".ts", ".js", ".tsx", ".jsx", ".go", ".rs", ".java", ".cpp", ".c"]
+
+
 def should_suggest_codex(file_path: str, content: str | None = None) -> tuple[bool, str]:
-    """Determine if Codex consultation should be suggested."""
+    """Determine if Codex should be used for this write/edit."""
     path = Path(file_path)
-    filename = path.name.lower()
     filepath_lower = file_path.lower()
 
     # Skip simple edits
@@ -82,23 +84,33 @@ def should_suggest_codex(file_path: str, content: str | None = None) -> tuple[bo
     # Check file path for design indicators
     for indicator in DESIGN_INDICATORS:
         if indicator.lower() in filepath_lower:
-            return True, f"File path contains '{indicator}' - likely a design decision"
+            return True, f"File path contains '{indicator}' - delegate to Codex for design decisions"
+
+    is_source = any(file_path.endswith(ext) for ext in SOURCE_EXTENSIONS)
 
     # Check content if available
     if content:
-        # New file with significant content
-        if len(content) > 500:
-            return True, "Creating new file with significant content"
+        # Any source file with meaningful content → delegate to Codex
+        if is_source and len(content) > 100:
+            return True, f"Source file implementation ({len(content)} chars)"
+
+        # Non-source new file with significant content
+        if len(content) > 200:
+            return True, "Creating file with significant content"
 
         # Check for design patterns in content
         for indicator in DESIGN_INDICATORS:
             if indicator in content:
                 return True, f"Content contains '{indicator}' - likely architectural code"
 
-    # New files in src/ directory
+    # Source files in src/ directory
     if "/src/" in file_path or file_path.startswith("src/"):
-        if content and len(content) > 200:
-            return True, "New source file - consider design review"
+        if is_source:
+            return True, "Source file in src/ - delegate implementation to Codex"
+
+    # Any source file write
+    if is_source:
+        return True, "Source file modification - consider Codex implementation"
 
     return False, ""
 
@@ -122,12 +134,13 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "additionalContext": (
-                        f"[Codex Consultation Reminder] {reason}. "
-                        "Consider consulting Codex before making this change. "
-                        "**Recommended**: Use Task tool with subagent_type='general-purpose' "
-                        "to preserve main context. "
-                        "(Direct call OK for quick questions: "
-                        "`codex exec --model gpt-5.3-codex --sandbox read-only --full-auto '...'`)"
+                        f"[Codex Implementation Required] {reason}. "
+                        "**STOP**: Do NOT write this code yourself. Delegate to Codex instead: "
+                        "`codex exec --model gpt-5.3-codex --sandbox workspace-write --full-auto "
+                        "'{describe the implementation task in detail}'` "
+                        "Use Task tool with subagent_type='general-purpose' to run Codex and "
+                        "preserve main context. Only write directly if the change is trivial "
+                        "(typo fix, single-line constant, doc update)."
                     )
                 }
             }
