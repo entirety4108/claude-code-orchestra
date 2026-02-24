@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Checkpoint script: Collect all session activity and generate a comprehensive checkpoint.
 
