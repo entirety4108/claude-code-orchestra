@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 """
-PreToolUse hook: Suggest using Gemini for deep research tasks.
+PreToolUse hook: Redirect WebSearch to Gemini CLI, suggest Gemini for WebFetch research.
 
-Analyzes web search/fetch operations and suggests delegating
-comprehensive research to Gemini CLI (1M context + Google Search grounding)
-via the gemini-explore subagent to preserve main context.
+WebSearch → ALWAYS redirect to Gemini CLI (Google Search grounding is built-in).
+WebFetch  → Suggest Gemini for research-heavy fetches.
 """
 
 import json
 import sys
 
-# Keywords that suggest deep research would benefit from Gemini
-RESEARCH_INDICATORS = [
+# Keywords that suggest WebFetch would benefit from Gemini
+WEBFETCH_RESEARCH_INDICATORS = [
     "documentation",
     "best practice",
     "comparison",
@@ -29,35 +28,29 @@ RESEARCH_INDICATORS = [
     "specification",
 ]
 
-# Simple lookups that don't need Gemini
-SIMPLE_LOOKUP_PATTERNS = [
+# WebFetch lookups that don't need Gemini
+WEBFETCH_SIMPLE_PATTERNS = [
     "error message",
     "stack trace",
-    "version",
     "release notes",
     "changelog",
 ]
 
 
-def should_suggest_gemini(query: str, url: str = "") -> tuple[bool, str]:
-    """Determine if Gemini should be suggested for this research."""
-    query_lower = query.lower()
-    url_lower = url.lower()
-    combined = f"{query_lower} {url_lower}"
+def should_suggest_gemini_for_fetch(url: str, prompt: str) -> tuple[bool, str]:
+    """Determine if Gemini should be suggested for a WebFetch."""
+    combined = f"{url.lower()} {prompt.lower()}"
 
-    # Skip simple lookups
-    for pattern in SIMPLE_LOOKUP_PATTERNS:
+    for pattern in WEBFETCH_SIMPLE_PATTERNS:
         if pattern in combined:
             return False, ""
 
-    # Check for research indicators
-    for indicator in RESEARCH_INDICATORS:
+    for indicator in WEBFETCH_RESEARCH_INDICATORS:
         if indicator in combined:
-            return True, f"Research involves '{indicator}'"
+            return True, f"Fetch involves '{indicator}'"
 
-    # Long queries suggest complex research
-    if len(query) > 100:
-        return True, "Complex research query detected"
+    if len(prompt) > 80:
+        return True, "Complex fetch prompt detected"
 
     return False, ""
 
@@ -68,32 +61,44 @@ def main():
         tool_name = data.get("tool_name", "")
         tool_input = data.get("tool_input", {})
 
-        # Get query/url based on tool type
-        query = ""
-        url = ""
         if tool_name == "WebSearch":
+            # Always redirect WebSearch to Gemini CLI
             query = tool_input.get("query", "")
-        elif tool_name == "WebFetch":
-            url = tool_input.get("url", "")
-            query = tool_input.get("prompt", "")
-
-        should_suggest, reason = should_suggest_gemini(query, url)
-
-        if should_suggest:
             output = {
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
                     "additionalContext": (
-                        f"[Gemini Research Suggestion] {reason}. "
-                        "For comprehensive research, consider using Gemini CLI "
-                        "(1M context + Google Search grounding) via the gemini-explore "
-                        "subagent (Task tool with subagent_type='gemini-explore'). "
-                        "Gemini can gather and organize findings more efficiently. "
-                        "Save results to .claude/docs/research/."
-                    )
+                        "[Gemini Required] Do NOT use WebSearch. "
+                        "Use Gemini CLI instead — it has Google Search grounding built-in "
+                        "and 1M context to synthesize results. "
+                        f'Run: `gemini -p "Search and summarize: {query}" 2>/dev/null` '
+                        "Or delegate to gemini-explore subagent: "
+                        "Task(subagent_type='gemini-explore', "
+                        f"prompt='Research: {query}. Save findings to .claude/docs/research/')"
+                    ),
                 }
             }
             print(json.dumps(output))
+
+        elif tool_name == "WebFetch":
+            url = tool_input.get("url", "")
+            prompt = tool_input.get("prompt", "")
+            should_suggest, reason = should_suggest_gemini_for_fetch(url, prompt)
+
+            if should_suggest:
+                output = {
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "additionalContext": (
+                            f"[Gemini Research Suggestion] {reason}. "
+                            "Consider using Gemini CLI (1M context + Google Search grounding): "
+                            f'`gemini -p "{prompt}" 2>/dev/null` '
+                            "or delegate to gemini-explore subagent to preserve main context. "
+                            "Save results to .claude/docs/research/."
+                        ),
+                    }
+                }
+                print(json.dumps(output))
 
         sys.exit(0)
 
