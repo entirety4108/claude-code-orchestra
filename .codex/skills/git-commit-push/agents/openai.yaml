@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit Push"
+  short_description: "Commit and push current repository changes safely"
+  default_prompt: "Commit the current changes and push to the appropriate remote branch with safety checks."

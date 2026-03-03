@@ -61,6 +61,8 @@ Claude Code Orchestra is a multi-agent collaboration framework. Claude Code (200
 
 | Decision | Rationale | Alternatives Considered | Date |
 |----------|-----------|------------------------|------|
+| Add `gh-issue-implement` slash command in `.codex/prompts` | Standardize issue-driven implementation workflow via GitHub CLI with explicit safety constraints | Ad-hoc issue handling each time without reusable command template | 2026-03-03 |
+| Add git-commit-push skill for end-of-task Git delivery | Standardize safe commit/push workflow with branch/upstream checks and non-destructive defaults | Ad-hoc manual Git flow per task (inconsistent and error-prone) | 2026-02-28 |
 | Gemini role expanded to codebase analysis + research + multimodal | Gemini CLI has native 1M context; Claude Code is 200K; delegate large-context tasks to Gemini | Keep Claude for codebase analysis (requires 1M Beta) | 2026-02-19 |
 | All subagents default to Opus | 200K context makes quality of reasoning more important than context size; Opus provides better output | Sonnet (cheaper but 200K same as Opus, weaker reasoning) | 2026-02-19 |
 | Agent Teams default model changed to Opus | Consistent with subagent model selection; better reasoning for parallel tasks | Sonnet (cheaper) | 2026-02-19 |
@@ -87,6 +89,8 @@ Claude Code Orchestra is a multi-agent collaboration framework. Claude Code (200
 
 | Date | Changes |
 |------|---------|
+| 2026-03-03 | Added `/gh-issue-implement` custom slash command template under `.codex/prompts` |
+| 2026-02-28 | Added git-commit-push skill to standardize safe commit/push execution |
 | 2026-02-19 | Context-aware redesign: Claude=200K, Gemini=1M (codebase+research+multimodal), all subagents/teams→Opus |
 | 2026-02-17 | Role clarification: Gemini → multimodal only, Codex → planning + complex code, Subagents → external research |
 | 2026-02-08 | Major redesign for Opus 4.6: 1M context, Agent Teams, skill pipeline |
