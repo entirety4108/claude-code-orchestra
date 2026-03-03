@@ -12,7 +12,7 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - If selector is missing, ask the user for issue number or URL.
 
 2. Read issue context with GitHub CLI.
-- Run `gh issue view <selector> --comments`.
+- Run `gh issue view <selector> --comments` with escalated execution (`sandbox_permissions=require_escalated`) and a short justification question.
 - Extract requirements, acceptance criteria, discussion context, and unresolved questions.
 - If requirements are ambiguous, stop and ask the user before implementation.
 
@@ -37,6 +37,7 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 
 ## Safety Rules
 
+- Execute all `gh` commands with escalated execution (`sandbox_permissions=require_escalated`) and include a concise user-facing `justification`.
 - Do not run `git push` without explicit user instruction.
 - Do not run `gh issue comment` without explicit user instruction.
 - Do not proceed on ambiguous requirements; ask the user to clarify first.
