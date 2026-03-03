@@ -33,6 +33,7 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - Changed files list.
 - Test/lint execution results.
 - Remaining tasks and next actions.
+- Add comment to the Github issue.
 
 ## Safety Rules
 
