@@ -1,0 +1,4 @@
+interface:
+  display_name: "GH Issue Close"
+  short_description: "Comment and close GitHub issues with reproducible details"
+  default_prompt: "Use $gh-issue-close to post a reproducible implementation comment and close GitHub issue #123."

@@ -41,4 +41,3 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - Do not run `git push` without explicit user instruction.
 - Do not run `gh issue comment` without explicit user instruction.
 - Do not proceed on ambiguous requirements; ask the user to clarify first.
-- If `gh` authentication or repository access fails, stop and report the required setup command.
