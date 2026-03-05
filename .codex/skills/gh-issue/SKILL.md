@@ -28,16 +28,25 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - Run relevant tests and lint checks for modified areas.
 - If checks fail, report cause and mitigation options clearly.
 
-6. Report results in Japanese.
+6. Post implementation details to the GitHub issue.
+- Create a concise Japanese comment with:
+  - One-paragraph implementation summary
+  - Changed files list
+  - Test/lint execution results
+  - Remaining tasks and next actions
+- Run `gh issue comment <selector> --body-file <temp-file>` with escalated execution and a concise `justification`.
+- If comment posting fails, include the failure details in the final report.
+
+7. Report results in Japanese.
 - One-paragraph implementation summary.
 - Changed files list.
 - Test/lint execution results.
 - Remaining tasks and next actions.
-- Add comment to the Github issue.
+- Whether issue comment was posted successfully.
 
 ## Safety Rules
 
 - Execute all `gh` commands with escalated execution (`sandbox_permissions=require_escalated`) and include a concise user-facing `justification`.
 - Do not run `git push` without explicit user instruction.
-- Do not run `gh issue comment` without explicit user instruction.
+- In this workflow, run `gh issue comment` after verification unless the user explicitly asks to skip it.
 - Do not proceed on ambiguous requirements; ask the user to clarify first.
