@@ -20,15 +20,20 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - Investigate related code and tests with focused searches.
 - Keep changes minimal and aligned with existing architecture and coding rules.
 
-4. Implement the change.
+4. Share the implementation plan and wait for user approval.
+- Present a concise plan in Japanese (what to change, affected files, verification steps).
+- Ask for explicit approval before implementation.
+- If the user requests changes, revise the plan and ask again.
+
+5. Implement the change.
 - Apply code updates with clear separation of concerns.
 - Preserve unrelated local changes; never revert user work without explicit request.
 
-5. Verify changes.
+6. Verify changes.
 - Run relevant tests and lint checks for modified areas.
 - If checks fail, report cause and mitigation options clearly.
 
-6. Post implementation details to the GitHub issue.
+7. Post implementation details to the GitHub issue.
 - Create a concise Japanese comment with:
   - One-paragraph implementation summary
   - Changed files list
@@ -37,7 +42,7 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 - Run `gh issue comment <selector> --body-file <temp-file>` with escalated execution and a concise `justification`.
 - If comment posting fails, include the failure details in the final report.
 
-7. Report results in Japanese.
+8. Report results in Japanese.
 - One-paragraph implementation summary.
 - Changed files list.
 - Test/lint execution results.
@@ -48,5 +53,6 @@ description: "Inspect a GitHub issue with GitHub CLI and implement the requested
 
 - Execute all `gh` commands with escalated execution (`sandbox_permissions=require_escalated`) and include a concise user-facing `justification`.
 - Do not run `git push` without explicit user instruction.
+- Do not implement until the user explicitly approves the plan from Workflow step 4.
 - In this workflow, run `gh issue comment` after verification unless the user explicitly asks to skip it.
 - Do not proceed on ambiguous requirements; ask the user to clarify first.

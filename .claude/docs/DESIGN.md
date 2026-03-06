@@ -61,6 +61,7 @@ Claude Code Orchestra is a multi-agent collaboration framework. Claude Code (200
 
 | Decision | Rationale | Alternatives Considered | Date |
 |----------|-----------|------------------------|------|
+| Require explicit user approval after `gh-issue` planning and before implementation | Add a clear execution gate so issue plans are reviewable and implementation starts only after user intent is confirmed | Continue auto-implementation immediately after planning (faster but higher mismatch risk) | 2026-03-06 |
 | Update `gh-issue` workflow to post implementation comments before user reporting | Keep issue timeline synchronized with verified implementation details before handoff to user | Report to user first and comment later (or forget to comment) | 2026-03-05 |
 | Add `gh-issue-close` skill for reproducible issue comments + close workflow | Standardize post-implementation issue closure with reproducible evidence (files, commands, verification, commit info) and reduce manual variance | Close issues with ad-hoc short comments that are hard to reproduce | 2026-03-04 |
 | Require escalated execution for all `gh` commands in `gh-issue` skill | `gh` commands depend on network/auth and can fail under sandbox restrictions; making escalation explicit improves reliability and operator consistency | Retry with escalation only after a failure (less predictable and slower) | 2026-03-03 |
@@ -93,6 +94,7 @@ Claude Code Orchestra is a multi-agent collaboration framework. Claude Code (200
 
 | Date | Changes |
 |------|---------|
+| 2026-03-06 | Updated `gh-issue` workflow to require user approval after planning and before implementation; synced `.codex/prompts/gh-issue-implement.md` |
 | 2026-03-05 | Updated `gh-issue` workflow: after verification, post implementation comment to issue before reporting to user; synced `.codex/prompts/gh-issue-implement.md` |
 | 2026-03-04 | Added `gh-issue-close` skill to post reproducible implementation comments and close GitHub issues safely |
 | 2026-03-03 | Updated `gh-issue` skill: require escalated execution for all `gh` commands with explicit justification |
